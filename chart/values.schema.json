@@ -673,6 +673,10 @@
                 "minProperties": 1,
                 "additionalProperties": false,
                 "properties": {
+                    "type": {
+                        "description": "Content **as string** for the 'type' item of the secret (can be templated)",
+                        "type": "string"
+                    },
                     "data": {
                         "description": "Content **as string** for the 'data' item of the secret (can be templated)",
                         "type": "string"
