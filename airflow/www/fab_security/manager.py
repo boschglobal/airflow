@@ -18,7 +18,6 @@
 # mypy: disable-error-code=var-annotated
 from __future__ import annotations
 
-import base64
 import datetime
 import json
 import logging
@@ -27,6 +26,7 @@ from typing import Any
 from uuid import uuid4
 
 import re2
+import requests
 from flask import Flask, current_app, g, session, url_for
 from flask_appbuilder import AppBuilder
 from flask_appbuilder.const import (
@@ -71,6 +71,8 @@ from flask_jwt_extended import JWTManager, current_user as current_user_jwt
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_login import AnonymousUserMixin, LoginManager, current_user
+from joserfc import jwt
+from joserfc.jwk import KeySet
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from airflow.configuration import conf
@@ -654,11 +656,9 @@ class BaseSecurityManager:
         # https://docs.microsoft.com/en-us/azure/active-directory/develop/
         # active-directory-protocols-oauth-code
         if provider == "azure":
-            log.debug("Azure response received : %s", resp)
-            id_token = resp["id_token"]
-            log.debug(str(id_token))
-            me = self._azure_jwt_token_parse(id_token)
-            log.debug("Parse JWT token : %s", me)
+            log.debug("Azure response received:\n%s", json.dumps(resp, indent=4))
+            me = self._decode_and_validate_azure_jwt(resp["id_token"])
+            log.debug("Decoded JWT:\n%s", json.dumps(me, indent=4))
             return {
                 "name": me.get("name", ""),
                 "email": me["upn"],
@@ -701,36 +701,17 @@ class BaseSecurityManager:
         else:
             return {}
 
-    def _azure_parse_jwt(self, id_token):
-        jwt_token_parts = r"^([^\.\s]*)\.([^\.\s]+)\.([^\.\s]*)$"
-        matches = re2.search(jwt_token_parts, id_token)
-        if not matches or len(matches.groups()) < 3:
-            log.error("Unable to parse token.")
-            return {}
-        return {
-            "header": matches.group(1),
-            "Payload": matches.group(2),
-            "Sig": matches.group(3),
-        }
+    def _decode_and_validate_azure_jwt(self, id_token):
+        keyset = KeySet.import_key_set(
+            requests.get("https://login.microsoftonline.com/common/discovery/keys").json()
+        )
+        claims = jwt.decode(id_token, keyset).claims
+        claims_requests = jwt.JWTClaimsRegistry()
+        # validate basic token claims: exp, iat, nbf
+        # See: https://jose.authlib.org/en/dev/api/jwt/#joserfc.jwt.JWTClaimsRegistry
+        claims_requests.validate(claims)
 
-    def _azure_jwt_token_parse(self, id_token):
-        jwt_split_token = self._azure_parse_jwt(id_token)
-        if not jwt_split_token:
-            return
-
-        jwt_payload = jwt_split_token["Payload"]
-        # Prepare for base64 decoding
-        payload_b64_string = jwt_payload
-        payload_b64_string += "=" * (4 - (len(jwt_payload) % 4))
-        decoded_payload = base64.urlsafe_b64decode(payload_b64_string.encode("ascii"))
-
-        if not decoded_payload:
-            log.error("Payload of id_token could not be base64 url decoded.")
-            return
-
-        jwt_decoded_payload = json.loads(decoded_payload.decode("utf-8"))
-
-        return jwt_decoded_payload
+        return claims
 
     def register_views(self):
         if not self.appbuilder.app.config.get("FAB_ADD_SECURITY_VIEWS", True):
