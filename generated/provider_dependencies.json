@@ -526,7 +526,12 @@
       "pydantic>=2.3.0"
     ],
     "devel-deps": [],
-    "plugins": [],
+    "plugins": [
+      {
+        "name": "edge_executor",
+        "plugin-class": "airflow.providers.edge.plugins.edge_executor_plugin.EdgeExecutorPlugin"
+      }
+    ],
     "cross-providers-deps": [],
     "excluded-python-versions": [],
     "state": "not-ready"
@@ -1111,22 +1116,6 @@
     ],
     "devel-deps": [],
     "plugins": [],
-    "cross-providers-deps": [],
-    "excluded-python-versions": [],
-    "state": "ready"
-  },
-  "remote": {
-    "deps": [
-      "apache-airflow>=2.10.0",
-      "pydantic"
-    ],
-    "devel-deps": [],
-    "plugins": [
-      {
-        "name": "remote_executor",
-        "plugin-class": "airflow.providers.remote.plugins.remote_executor_plugin.RemoteExecutorPlugin"
-      }
-    ],
     "cross-providers-deps": [],
     "excluded-python-versions": [],
     "state": "ready"
