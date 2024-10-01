@@ -42,9 +42,10 @@ pytest.importorskip("pydantic", minversion="2.0.0")
 
 
 def test_get_sysinfo():
-    sysinfo = _get_sysinfo()
+    sysinfo = _get_sysinfo(concurrency=2)
     assert "airflow_version" in sysinfo
     assert "edge_provider_version" in sysinfo
+    assert "concurrency" in sysinfo
 
 
 class TestEdgeWorkerCli:
@@ -202,7 +203,7 @@ class TestEdgeWorkerCli:
             pytest.param(False, False, EdgeWorkerState.IDLE, id="idle"),
         ],
     )
-    @patch("airflow.providers.edge.models.edge_worker.EdgeWorker.set_state")
+    @patch("airflow.providers.edge.models.edge_worker.EdgeWorker.set_state_get_queues")
     def test_heartbeat(self, mock_set_state, drain, jobs, expected_state, worker_with_job: _EdgeWorkerCli):
         if not jobs:
             worker_with_job.jobs = []
@@ -227,7 +228,7 @@ class TestEdgeWorkerCli:
 
     @patch("airflow.providers.edge.models.edge_worker.EdgeWorker.register_worker")
     @patch("airflow.providers.edge.cli.edge_command._EdgeWorkerCli.loop")
-    @patch("airflow.providers.edge.models.edge_worker.EdgeWorker.set_state")
+    @patch("airflow.providers.edge.models.edge_worker.EdgeWorker.set_state_get_queues")
     def test_start_and_run_one(
         self, mock_set_state, mock_loop, mock_register_worker, worker_with_job: _EdgeWorkerCli
     ):

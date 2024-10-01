@@ -69,7 +69,7 @@ class TestEdgeWorker:
 
     def test_register_worker(self, session: Session):
         EdgeWorker.register_worker(
-            "test_worker", EdgeWorkerState.STARTING, queues=None, sysinfo=_get_sysinfo()
+            "test_worker", EdgeWorkerState.STARTING, queues=None, sysinfo=_get_sysinfo(concurrency=2)
         )
 
         worker: list[EdgeWorkerModel] = session.query(EdgeWorkerModel).all()
@@ -86,9 +86,11 @@ class TestEdgeWorker:
         session.add(rwm)
         session.commit()
 
-        EdgeWorker.set_state("test2_worker", EdgeWorkerState.RUNNING, 1, _get_sysinfo())
+        queues = EdgeWorker.set_state_get_queues("test2_worker", EdgeWorkerState.RUNNING, 1, _get_sysinfo(concurrency=2))
 
         worker: list[EdgeWorkerModel] = session.query(EdgeWorkerModel).all()
         assert len(worker) == 1
         assert worker[0].worker_name == "test2_worker"
         assert worker[0].state == EdgeWorkerState.RUNNING
+        assert len(queues) == 1
+        assert "default" in queues

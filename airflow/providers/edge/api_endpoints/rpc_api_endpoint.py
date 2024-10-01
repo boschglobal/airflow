@@ -64,7 +64,8 @@ def _initialize_method_map() -> dict[str, Callable]:
         EdgeJob.set_state,
         EdgeLogs.push_logs,
         EdgeWorker.register_worker,
-        EdgeWorker.set_state,
+        EdgeWorker.set_state_get_queues,
+        EdgeWorker.add_and_remove_queues,
     ]
     return {f"{func.__module__}.{func.__qualname__}": func for func in functions}
 

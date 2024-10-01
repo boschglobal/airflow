@@ -220,7 +220,7 @@ class EdgeWorker(BaseModel, LoggingMixin):
         worker.sysinfo = json.dumps(sysinfo)
         worker.last_update = timezone.utcnow()
         session.commit()
-        if worker.queues
+        if worker.queues:
             return [queue.strip() for queue in worker.queues.split(QUEUE_SEPARATOR)]
         return None
 
