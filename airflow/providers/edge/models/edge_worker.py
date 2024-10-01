@@ -64,6 +64,8 @@ class EdgeWorkerState(str, Enum):
     UNKNOWN = "unknown"
     """No heartbeat signal from worker for some time, Edge Worker probably down."""
 
+QUEUE_SEPARATOR = ", "
+"""Describes the string which separates the queue field."""
 
 class EdgeWorkerModel(Base, LoggingMixin):
     """A Edge Worker instance which reports the state and health."""
@@ -90,7 +92,7 @@ class EdgeWorkerModel(Base, LoggingMixin):
     ):
         self.worker_name = worker_name
         self.state = state
-        self.queues = ", ".join(queues) if queues else None
+        self.queues = QUEUE_SEPARATOR.join(queues) if queues else None
         self.first_online = first_online or timezone.utcnow()
         self.last_update = last_update
         super().__init__()
@@ -99,6 +101,28 @@ class EdgeWorkerModel(Base, LoggingMixin):
     def sysinfo_json(self) -> dict:
         return json.loads(self.sysinfo) if self.sysinfo else None
 
+    def add_queues(self, new_queues: List[str]) -> None:
+        """Adds new queue to the queues field."""
+        queues: List[str] = []
+        if self.queues:
+            queues = self.queues.split(QUEUE_SEPARATOR)
+
+        queues.extend(new_queues)
+
+        # remove duplicated items
+        self.queues = QUEUE_SEPARATOR.join(list(set(queues)))
+
+    def remove_queue(self, remove_queues: List[str]) -> None:
+        """Removes queue from queues field."""
+        if not self.queues:
+            return
+
+        queues: List[str] = self.queues.split(QUEUE_SEPARATOR)
+        for queue_name in remove_queues:
+            if name in queues:
+                queues.remove(name)
+
+        self.queues = QUEUE_SEPARATOR.join(queues)
 
 class EdgeWorker(BaseModel, LoggingMixin):
     """Accessor for Edge Worker instances as logical model."""
@@ -181,13 +205,13 @@ class EdgeWorker(BaseModel, LoggingMixin):
     @staticmethod
     @internal_api_call
     @provide_session
-    def set_state(
+    def set_state_get_queues(
         worker_name: str,
         state: EdgeWorkerState,
         jobs_active: int,
         sysinfo: dict[str, str],
         session: Session = NEW_SESSION,
-    ):
+    ) -> Optional[List[str]]:
         EdgeWorker.assert_version(sysinfo)
         query = select(EdgeWorkerModel).where(EdgeWorkerModel.worker_name == worker_name)
         worker: EdgeWorkerModel = session.scalar(query)
@@ -196,7 +220,26 @@ class EdgeWorker(BaseModel, LoggingMixin):
         worker.sysinfo = json.dumps(sysinfo)
         worker.last_update = timezone.utcnow()
         session.commit()
+        if worker.queues
+            return [queue.strip() for queue in worker.queues.split(QUEUE_SEPARATOR)]
+        return None
 
+    @staticmethod
+    @internal_api_call
+    @provide_session
+    def add_and_remove_queues(
+        worker_name: str,
+        new_queues: List[str] = None,
+        remove_queues: List[str] = None,
+        session: Session = NEW_SESSION
+    ) -> None:
+        query = select(EdgeWorkerModel).where(EdgeWorkerModel.worker_name == worker_name)
+        worker: EdgeWorkerModel = session.scalar(query)
+        if new_queues:
+            worker.add_queues(new_queues)
+        if remove_queues:
+            worker.remove_queues(remove_queues)
+        session.commit()
 
 EdgeWorker.model_rebuild()
 

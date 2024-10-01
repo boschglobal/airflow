@@ -91,11 +91,12 @@ def _hostname() -> str:
         return os.uname()[1]
 
 
-def _get_sysinfo() -> dict:
+def _get_sysinfo(concurrency: int) -> dict:
     """Produce the sysinfo from worker to post to central site."""
     return {
         "airflow_version": airflow_version,
         "edge_provider_version": edge_provider_version,
+        "concurrency": concurrency,
     }
 
 
@@ -149,7 +150,7 @@ class _EdgeWorkerCli:
         """Start the execution in a loop until terminated."""
         try:
             self.last_hb = EdgeWorker.register_worker(
-                self.hostname, EdgeWorkerState.STARTING, self.queues, _get_sysinfo()
+                self.hostname, EdgeWorkerState.STARTING, self.queues, _get_sysinfo(self.concurrency)
             ).last_update
         except AirflowException as e:
             if "404:NOT FOUND" in str(e):
@@ -231,7 +232,7 @@ class _EdgeWorkerCli:
             else EdgeWorkerState.IDLE
         )
         sysinfo = _get_sysinfo()
-        EdgeWorker.set_state(self.hostname, state, len(self.jobs), sysinfo)
+        self.queues = EdgeWorker.set_state_get_queues(self.hostname, state, len(self.jobs), sysinfo)
 
     def interruptible_sleep(self):
         """Sleeps but stops sleeping if drain is made."""
