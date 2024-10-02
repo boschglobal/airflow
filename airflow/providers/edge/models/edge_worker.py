@@ -64,7 +64,7 @@ class EdgeWorkerState(str, Enum):
     UNKNOWN = "unknown"
     """No heartbeat signal from worker for some time, Edge Worker probably down."""
 
-QUEUE_SEPARATOR = ", "
+QUEUE_SEPARATOR = ","
 """Describes the string which separates the queue field."""
 
 class EdgeWorkerModel(Base, LoggingMixin):
@@ -92,7 +92,7 @@ class EdgeWorkerModel(Base, LoggingMixin):
     ):
         self.worker_name = worker_name
         self.state = state
-        self.queues = QUEUE_SEPARATOR.join(queues) if queues else None
+        self.queues = self.set_queues(queues)
         self.first_online = first_online or timezone.utcnow()
         self.last_update = last_update
         super().__init__()
@@ -100,6 +100,10 @@ class EdgeWorkerModel(Base, LoggingMixin):
     @property
     def sysinfo_json(self) -> dict:
         return json.loads(self.sysinfo) if self.sysinfo else None
+
+    def set_queues(self, queues: List[str]) -> None:
+        """Sets all queues of list into queues field."""
+        self.queues = QUEUE_SEPARATOR.join(queues) if queues else None
 
     def add_queues(self, new_queues: List[str]) -> None:
         """Adds new queue to the queues field."""
@@ -119,8 +123,8 @@ class EdgeWorkerModel(Base, LoggingMixin):
 
         queues: List[str] = self.queues.split(QUEUE_SEPARATOR)
         for queue_name in remove_queues:
-            if name in queues:
-                queues.remove(name)
+            if queue_name in queues:
+                queues.remove(queue_name)
 
         self.queues = QUEUE_SEPARATOR.join(queues)
 
@@ -185,7 +189,7 @@ class EdgeWorker(BaseModel, LoggingMixin):
         if not worker:
             worker = EdgeWorkerModel(worker_name=worker_name, state=state, queues=queues)
         worker.state = state
-        worker.queues = queues
+        worker.queues = worker.set_queues(queues)
         worker.sysinfo = json.dumps(sysinfo)
         worker.last_update = timezone.utcnow()
         session.add(worker)
