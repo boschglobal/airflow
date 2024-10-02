@@ -101,13 +101,13 @@ class EdgeWorkerModel(Base, LoggingMixin):
     def sysinfo_json(self) -> dict:
         return json.loads(self.sysinfo) if self.sysinfo else None
 
-    def set_queues(self, queues: List[str]) -> None:
+    def set_queues(self, queues: list[str] | None) -> None:
         """Sets all queues of list into queues field."""
         self.queues = QUEUE_SEPARATOR.join(queues) if queues else None
 
-    def add_queues(self, new_queues: List[str]) -> None:
+    def add_queues(self, new_queues: list[str]) -> None:
         """Adds new queue to the queues field."""
-        queues: List[str] = []
+        queues: list[str] = []
         if self.queues:
             queues = self.queues.split(QUEUE_SEPARATOR)
 
@@ -116,12 +116,12 @@ class EdgeWorkerModel(Base, LoggingMixin):
         # remove duplicated items
         self.queues = QUEUE_SEPARATOR.join(list(set(queues)))
 
-    def remove_queue(self, remove_queues: List[str]) -> None:
+    def remove_queue(self, remove_queues: list[str]) -> None:
         """Removes queue from queues field."""
         if not self.queues:
             return
 
-        queues: List[str] = self.queues.split(QUEUE_SEPARATOR)
+        queues: list[str] = self.queues.split(QUEUE_SEPARATOR)
         for queue_name in remove_queues:
             if queue_name in queues:
                 queues.remove(queue_name)
