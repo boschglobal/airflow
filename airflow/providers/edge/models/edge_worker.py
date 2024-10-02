@@ -196,7 +196,7 @@ class EdgeWorker(BaseModel, LoggingMixin):
         return EdgeWorker(
             worker_name=worker_name,
             state=state,
-            queues=worker.queues,
+            queues=queues,
             first_online=worker.first_online,
             last_update=worker.last_update,
             jobs_active=worker.jobs_active or 0,
