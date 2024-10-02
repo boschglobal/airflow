@@ -243,6 +243,7 @@ class EdgeWorker(BaseModel, LoggingMixin):
             worker.add_queues(new_queues)
         if remove_queues:
             worker.remove_queues(remove_queues)
+        session.add(worker)
         session.commit()
 
 EdgeWorker.model_rebuild()
