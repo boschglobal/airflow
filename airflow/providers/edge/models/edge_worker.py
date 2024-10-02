@@ -92,7 +92,7 @@ class EdgeWorkerModel(Base, LoggingMixin):
     ):
         self.worker_name = worker_name
         self.state = state
-        self.queues = self.set_queues(queues)
+        self.set_queues(queues)
         self.first_online = first_online or timezone.utcnow()
         self.last_update = last_update
         super().__init__()
