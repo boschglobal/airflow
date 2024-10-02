@@ -189,7 +189,7 @@ class EdgeWorker(BaseModel, LoggingMixin):
         if not worker:
             worker = EdgeWorkerModel(worker_name=worker_name, state=state, queues=queues)
         worker.state = state
-        worker.queues = worker.set_queues(queues)
+        worker.set_queues(queues)
         worker.sysinfo = json.dumps(sysinfo)
         worker.last_update = timezone.utcnow()
         session.add(worker)
