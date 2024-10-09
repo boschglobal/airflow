@@ -16,11 +16,12 @@
 # under the License.
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING, Sequence
 
 import pytest
 
-from airflow.providers.edge.cli.edge_command import _get_sysinfo
+from airflow.providers.edge.cli.edge_command import _EdgeWorkerCli
 from airflow.providers.edge.models.edge_worker import (
     EdgeWorker,
     EdgeWorkerModel,
@@ -36,6 +37,11 @@ pytestmark = pytest.mark.db_test
 
 
 class TestEdgeWorker:
+    @pytest.fixture
+    def cli_worker(self, tmp_path: Path) -> _EdgeWorkerCli:
+        test_worker = _EdgeWorkerCli(tmp_path / "dummy.pid", "dummy", None, 8, 5, 5)
+        return test_worker
+
     @pytest.fixture(autouse=True)
     def setup_test_cases(self, session: Session):
         session.query(EdgeWorkerModel).delete()
@@ -74,9 +80,11 @@ class TestEdgeWorker:
             ["default", "default2"],
         ],
     )
-    def test_register_worker(self, session: Session, input_queues: Sequence[str] | None):
+    def test_register_worker(
+        self, session: Session, input_queues: Sequence[str] | None, cli_worker: _EdgeWorkerCli
+    ):
         EdgeWorker.register_worker(
-            "test_worker", EdgeWorkerState.STARTING, queues=input_queues, sysinfo=_get_sysinfo()
+            "test_worker", EdgeWorkerState.STARTING, queues=input_queues, sysinfo=cli_worker._get_sysinfo()
         )
 
         worker: list[EdgeWorkerModel] = session.query(EdgeWorkerModel).all()
@@ -87,7 +95,7 @@ class TestEdgeWorker:
         else:
             assert worker[0].queues is None
 
-    def test_set_state(self, session: Session):
+    def test_set_state(self, session: Session, cli_worker: _EdgeWorkerCli):
         rwm = EdgeWorkerModel(
             worker_name="test2_worker",
             state=EdgeWorkerState.IDLE,
@@ -97,7 +105,7 @@ class TestEdgeWorker:
         session.add(rwm)
         session.commit()
 
-        EdgeWorker.set_state("test2_worker", EdgeWorkerState.RUNNING, 1, _get_sysinfo())
+        EdgeWorker.set_state("test2_worker", EdgeWorkerState.RUNNING, 1, cli_worker._get_sysinfo())
 
         worker: list[EdgeWorkerModel] = session.query(EdgeWorkerModel).all()
         assert len(worker) == 1
