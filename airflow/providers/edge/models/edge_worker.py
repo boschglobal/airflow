@@ -103,6 +103,7 @@ class EdgeWorkerModel(Base, LoggingMixin):
         """Sets all queues of list into queues field."""
         self.queues = ",".join(queues) if queues else None
 
+
 class EdgeWorker(BaseModel, LoggingMixin):
     """Accessor for Edge Worker instances as logical model."""
 
