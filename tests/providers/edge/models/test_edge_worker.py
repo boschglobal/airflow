@@ -16,7 +16,7 @@
 # under the License.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Sequence
 
 import pytest
 
@@ -67,15 +67,25 @@ class TestEdgeWorker:
             {"airflow_version": airflow_version, "edge_provider_version": edge_provider_version}
         )
 
-    def test_register_worker(self, session: Session):
+    @pytest.mark.parametrize(
+        "input_queues",
+        [
+            None,
+            ["default", "default2"],
+        ],
+    )
+    def test_register_worker(self, session: Session, input_queues: Sequence[str] | None):
         EdgeWorker.register_worker(
-            "test_worker", EdgeWorkerState.STARTING, queues=["default", "default2"], sysinfo=_get_sysinfo()
+            "test_worker", EdgeWorkerState.STARTING, queues=input_queues, sysinfo=_get_sysinfo()
         )
 
         worker: list[EdgeWorkerModel] = session.query(EdgeWorkerModel).all()
         assert len(worker) == 1
         assert worker[0].worker_name == "test_worker"
-        assert worker[0].queues == "default,default2"
+        if input_queues:
+            assert worker[0].queues == "default,default2"
+        else:
+            assert worker[0].queues is None
 
     def test_set_state(self, session: Session):
         rwm = EdgeWorkerModel(
