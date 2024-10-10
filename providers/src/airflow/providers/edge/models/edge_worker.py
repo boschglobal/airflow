@@ -90,7 +90,7 @@ class EdgeWorkerModel(Base, LoggingMixin):
     ):
         self.worker_name = worker_name
         self.state = state
-        self.queues = ", ".join(queues) if queues else None
+        self.set_queues(queues)
         self.first_online = first_online or timezone.utcnow()
         self.last_update = last_update
         super().__init__()
@@ -98,6 +98,10 @@ class EdgeWorkerModel(Base, LoggingMixin):
     @property
     def sysinfo_json(self) -> dict:
         return json.loads(self.sysinfo) if self.sysinfo else None
+
+    def set_queues(self, queues: list[str] | None) -> None:
+        """Set all queues of list into queues field."""
+        self.queues = ",".join(queues) if queues else None
 
 
 class EdgeWorker(BaseModel, LoggingMixin):
@@ -161,14 +165,14 @@ class EdgeWorker(BaseModel, LoggingMixin):
         if not worker:
             worker = EdgeWorkerModel(worker_name=worker_name, state=state, queues=queues)
         worker.state = state
-        worker.queues = queues
+        worker.set_queues(queues)
         worker.sysinfo = json.dumps(sysinfo)
         worker.last_update = timezone.utcnow()
         session.add(worker)
         return EdgeWorker(
             worker_name=worker_name,
             state=state,
-            queues=worker.queues,
+            queues=queues,
             first_online=worker.first_online,
             last_update=worker.last_update,
             jobs_active=worker.jobs_active or 0,

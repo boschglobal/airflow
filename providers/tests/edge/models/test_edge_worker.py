@@ -16,7 +16,7 @@
 # under the License.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Sequence
 
 import pytest
 
@@ -67,20 +67,31 @@ class TestEdgeWorker:
             {"airflow_version": airflow_version, "edge_provider_version": edge_provider_version}
         )
 
-    def test_register_worker(self, session: Session):
+    @pytest.mark.parametrize(
+        "input_queues",
+        [
+            pytest.param(None, id="empty-queues"),
+            pytest.param(["default", "default2"], id="with-queues"),
+        ],
+    )
+    def test_register_worker(self, session: Session, input_queues: Sequence[str] | None):
         EdgeWorker.register_worker(
-            "test_worker", EdgeWorkerState.STARTING, queues=None, sysinfo=_get_sysinfo()
+            "test_worker", EdgeWorkerState.STARTING, queues=input_queues, sysinfo=_get_sysinfo()
         )
 
         worker: list[EdgeWorkerModel] = session.query(EdgeWorkerModel).all()
         assert len(worker) == 1
         assert worker[0].worker_name == "test_worker"
+        if input_queues:
+            assert worker[0].queues == "default,default2"
+        else:
+            assert worker[0].queues is None
 
     def test_set_state(self, session: Session):
         rwm = EdgeWorkerModel(
             worker_name="test2_worker",
             state=EdgeWorkerState.IDLE,
-            queues=["default"],
+            queues=["default", "default2"],
             first_online=timezone.utcnow(),
         )
         session.add(rwm)
@@ -92,3 +103,4 @@ class TestEdgeWorker:
         assert len(worker) == 1
         assert worker[0].worker_name == "test2_worker"
         assert worker[0].state == EdgeWorkerState.RUNNING
+        assert worker[0].queues == "default,default2"
