@@ -103,12 +103,21 @@ def internal_api_call(func: Callable[PS, RT]) -> Callable[PS, RT]:
     See [AIP-44](https://cwiki.apache.org/confluence/display/AIRFLOW/AIP-44+Airflow+Internal+API)
     for more information .
     """
-    from requests.exceptions import ConnectionError
+    from requests.exceptions import ConnectionError, HTTPError
+
+    def is_retryable_exception(exception: Exception) -> bool:
+        if (
+            isinstance(exception, HTTPError)
+            and exception.response.status_code == 502
+            or isinstance(exception, (ConnectionError, NewConnectionError))
+        ):
+            return True
+        return False
 
     @tenacity.retry(
         stop=tenacity.stop_after_attempt(10),
         wait=tenacity.wait_exponential(min=1),
-        retry=tenacity.retry_if_exception_type((NewConnectionError, ConnectionError)),
+        retry=tenacity.retry_if_exception(is_retryable_exception),
         before_sleep=tenacity.before_log(logger, logging.WARNING),
     )
     def make_jsonrpc_request(method_name: str, params_json: str) -> bytes:
