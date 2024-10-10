@@ -27,7 +27,6 @@ import time_machine
 from airflow.exceptions import AirflowException
 from airflow.providers.edge.cli.edge_command import (
     _EdgeWorkerCli,
-    _get_sysinfo,
     _Job,
 )
 from airflow.providers.edge.models.edge_job import EdgeJob
@@ -40,12 +39,6 @@ pytest.importorskip("pydantic", minversion="2.0.0")
 
 # Ignore the following error for mocking
 # mypy: disable-error-code="attr-defined"
-
-
-def test_get_sysinfo():
-    sysinfo = _get_sysinfo()
-    assert "airflow_version" in sysinfo
-    assert "edge_provider_version" in sysinfo
 
 
 class TestEdgeWorkerCli:
@@ -258,3 +251,12 @@ class TestEdgeWorkerCli:
         mock_register_worker.assert_called_once()
         mock_loop.assert_called_once()
         mock_set_state.assert_called_once()
+
+    def test_get_sysinfo(self, worker_with_job: _EdgeWorkerCli):
+        concurrency = 8
+        worker_with_job.concurrency = concurrency
+        sysinfo = worker_with_job._get_sysinfo()
+        assert "airflow_version" in sysinfo
+        assert "edge_provider_version" in sysinfo
+        assert "concurrency" in sysinfo
+        assert sysinfo["concurrency"] == concurrency
