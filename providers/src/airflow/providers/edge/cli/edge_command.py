@@ -162,7 +162,7 @@ class _EdgeWorkerCli:
                 self.loop()
 
             logger.info("Quitting worker, signal being offline.")
-            EdgeWorker.set_state(self.hostname, EdgeWorkerState.OFFLINE, 0, self._get_sysinfo())
+            EdgeWorker.set_state_get_queues(self.hostname, EdgeWorkerState.OFFLINE, 0, self._get_sysinfo())
         finally:
             remove_existing_pidfile(self.pid_file_path)
 
@@ -231,7 +231,7 @@ class _EdgeWorkerCli:
             else EdgeWorkerState.IDLE
         )
         sysinfo = self._get_sysinfo()
-        EdgeWorker.set_state(self.hostname, state, len(self.jobs), sysinfo)
+        self.queues = EdgeWorker.set_state_get_queues(self.hostname, state, len(self.jobs), sysinfo)
 
     def interruptible_sleep(self):
         """Sleeps but stops sleeping if drain is made."""

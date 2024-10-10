@@ -196,14 +196,20 @@ class TestEdgeWorkerCli:
             pytest.param(False, False, EdgeWorkerState.IDLE, id="idle"),
         ],
     )
-    @patch("airflow.providers.edge.models.edge_worker.EdgeWorker.set_state")
-    def test_heartbeat(self, mock_set_state, drain, jobs, expected_state, worker_with_job: _EdgeWorkerCli):
+    @patch("airflow.providers.edge.models.edge_worker.EdgeWorker.set_state_get_queues")
+    def test_heartbeat(
+        self, mock_set_state_get_queues, drain, jobs, expected_state, worker_with_job: _EdgeWorkerCli
+    ):
         if not jobs:
             worker_with_job.jobs = []
         _EdgeWorkerCli.drain = drain
+        mock_set_state_get_queues.return_value = ["queue1", "queue2"]
         with conf_vars({("edge", "api_url"): "https://mock.server"}):
             worker_with_job.heartbeat()
-        assert mock_set_state.call_args.args[1] == expected_state
+        assert mock_set_state_get_queues.call_args.args[1] == expected_state
+        assert len(worker_with_job.queues) == 2
+        assert "queue1" in worker_with_job.queues
+        assert "queue2" in worker_with_job.queues
 
     @patch("airflow.providers.edge.models.edge_worker.EdgeWorker.register_worker")
     def test_start_missing_apiserver(self, mock_register_worker, worker_with_job: _EdgeWorkerCli):
@@ -221,9 +227,9 @@ class TestEdgeWorkerCli:
 
     @patch("airflow.providers.edge.models.edge_worker.EdgeWorker.register_worker")
     @patch("airflow.providers.edge.cli.edge_command._EdgeWorkerCli.loop")
-    @patch("airflow.providers.edge.models.edge_worker.EdgeWorker.set_state")
+    @patch("airflow.providers.edge.models.edge_worker.EdgeWorker.set_state_get_queues")
     def test_start_and_run_one(
-        self, mock_set_state, mock_loop, mock_register_worker, worker_with_job: _EdgeWorkerCli
+        self, mock_set_state_get_queues, mock_loop, mock_register_worker, worker_with_job: _EdgeWorkerCli
     ):
         mock_register_worker.side_effect = [
             EdgeWorker(
@@ -250,7 +256,7 @@ class TestEdgeWorkerCli:
 
         mock_register_worker.assert_called_once()
         mock_loop.assert_called_once()
-        mock_set_state.assert_called_once()
+        mock_set_state_get_queues.assert_called_once()
 
     def test_get_sysinfo(self, worker_with_job: _EdgeWorkerCli):
         concurrency = 8

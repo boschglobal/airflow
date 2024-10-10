@@ -42,6 +42,10 @@ if TYPE_CHECKING:
     from sqlalchemy.orm.session import Session
 
 
+QUEUE_SEPARATOR = ","
+"""Describes the string which separates the queue field."""
+
+
 class EdgeWorkerVersionException(AirflowException):
     """Signal a version mismatch between core and Edge Site."""
 
@@ -101,7 +105,28 @@ class EdgeWorkerModel(Base, LoggingMixin):
 
     def set_queues(self, queues: list[str] | None) -> None:
         """Set all queues of list into queues field."""
-        self.queues = ",".join(queues) if queues else None
+        self.queues = QUEUE_SEPARATOR.join(queues) if queues else None
+
+    def get_queues(self) -> list[str]:
+        """Return list of queues which are stored in queues field."""
+        if self.queues:
+            return self.queues.split(QUEUE_SEPARATOR)
+        return []
+
+    def add_queues(self, new_queues: list[str]) -> None:
+        """Add new queue to the queues field."""
+        queues = self.get_queues()
+        queues.extend(new_queues)
+        # remove duplicated items
+        self.set_queues(list(set(queues)))
+
+    def remove_queues(self, remove_queues: list[str]) -> None:
+        """Remove queue from queues field."""
+        queues = self.get_queues()
+        for queue_name in remove_queues:
+            if queue_name in queues:
+                queues.remove(queue_name)
+        self.set_queues(queues)
 
 
 class EdgeWorker(BaseModel, LoggingMixin):
@@ -185,13 +210,13 @@ class EdgeWorker(BaseModel, LoggingMixin):
     @staticmethod
     @internal_api_call
     @provide_session
-    def set_state(
+    def set_state_get_queues(
         worker_name: str,
         state: EdgeWorkerState,
         jobs_active: int,
         sysinfo: dict[str, str],
         session: Session = NEW_SESSION,
-    ):
+    ) -> list[str] | None:
         EdgeWorker.assert_version(sysinfo)
         query = select(EdgeWorkerModel).where(EdgeWorkerModel.worker_name == worker_name)
         worker: EdgeWorkerModel = session.scalar(query)
@@ -199,6 +224,27 @@ class EdgeWorker(BaseModel, LoggingMixin):
         worker.jobs_active = jobs_active
         worker.sysinfo = json.dumps(sysinfo)
         worker.last_update = timezone.utcnow()
+        session.commit()
+        if worker.queues:
+            return [queue.strip() for queue in worker.queues.split(QUEUE_SEPARATOR)]
+        return None
+
+    @staticmethod
+    @internal_api_call
+    @provide_session
+    def add_and_remove_queues(
+        worker_name: str,
+        new_queues: list[str] | None = None,
+        remove_queues: list[str] | None = None,
+        session: Session = NEW_SESSION,
+    ) -> None:
+        query = select(EdgeWorkerModel).where(EdgeWorkerModel.worker_name == worker_name)
+        worker: EdgeWorkerModel = session.scalar(query)
+        if new_queues:
+            worker.add_queues(new_queues)
+        if remove_queues:
+            worker.remove_queues(remove_queues)
+        session.add(worker)
         session.commit()
 
 
