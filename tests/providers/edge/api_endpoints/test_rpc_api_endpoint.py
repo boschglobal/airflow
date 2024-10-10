@@ -67,7 +67,8 @@ def test_initialize_method_map():
         EdgeJob.set_state,
         EdgeLogs.push_logs,
         EdgeWorker.register_worker,
-        EdgeWorker.set_state,
+        EdgeWorker.set_state_get_queues,
+        EdgeWorker.add_and_remove_queues,
     ]:
         method_key = f"{method.__module__}.{method.__qualname__}"
         assert method_key in method_map.keys()
