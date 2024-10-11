@@ -91,21 +91,22 @@ class TestEdgeWorker:
         assert len(worker) == 1
         assert worker[0].worker_name == "test_worker"
         if input_queues:
-            assert worker[0].queues == "default,default2"
+            assert worker[0].queues == input_queues
         else:
             assert worker[0].queues is None
 
-    def test_set_state_get_queues(self, session: Session, cli_worker: _EdgeWorkerCli):
+    def test_set_state(self, session: Session, cli_worker: _EdgeWorkerCli):
+        queues = ["default", "default2"]
         rwm = EdgeWorkerModel(
             worker_name="test2_worker",
             state=EdgeWorkerState.IDLE,
-            queues=["default", "default2"],
+            queues=queues,
             first_online=timezone.utcnow(),
         )
         session.add(rwm)
         session.commit()
 
-        return_queues = EdgeWorker.set_state_get_queues(
+        return_queues = EdgeWorker.set_state(
             "test2_worker", EdgeWorkerState.RUNNING, 1, cli_worker._get_sysinfo()
         )
 
@@ -113,7 +114,7 @@ class TestEdgeWorker:
         assert len(worker) == 1
         assert worker[0].worker_name == "test2_worker"
         assert worker[0].state == EdgeWorkerState.RUNNING
-        assert worker[0].queues == "default,default2"
+        assert worker[0].queues == queues
         assert return_queues == ["default", "default2"]
 
     @pytest.mark.parametrize(
@@ -146,6 +147,6 @@ class TestEdgeWorker:
         worker: list[EdgeWorkerModel] = session.query(EdgeWorkerModel).all()
         assert len(worker) == 1
         assert worker[0].worker_name == "test2_worker"
-        assert len(expected_queues) == len(worker[0].get_queues())
+        assert len(expected_queues) == len(worker[0].queues)
         for expected_queue in expected_queues:
             assert expected_queue in worker[0].queues
