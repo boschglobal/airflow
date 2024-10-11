@@ -39,6 +39,12 @@ RT = TypeVar("RT")
 
 logger = logging.getLogger(__name__)
 
+class AirflowHttpException(AirflowException):
+    """Raise when there is a problem during an http request."""
+
+    def __init__(self, message: str, status_code: int):
+        super().__init__(message)
+        self.status_code = status_code
 
 class InternalApiConfig:
     """Stores and caches configuration for Internal API."""
@@ -103,17 +109,15 @@ def internal_api_call(func: Callable[PS, RT]) -> Callable[PS, RT]:
     See [AIP-44](https://cwiki.apache.org/confluence/display/AIRFLOW/AIP-44+Airflow+Internal+API)
     for more information .
     """
-    from requests.exceptions import ConnectionError, HTTPError
+    from requests.exceptions import ConnectionError
+    from http import HTTPStatus
 
     def is_retryable_exception(exception: Exception) -> bool:
-        if (
-            isinstance(exception, HTTPError)
-            and exception.response.status_code == 502
-            or isinstance(exception, (ConnectionError, NewConnectionError))
-        ):
-            return True
-        return False
-
+        retryable_status_codes = [HTTPStatus.BAD_GATEWAY, HTTPStatus.GATEWAY_TIMEOUT]
+        return (isinstance(exception, AirflowHttpException) 
+                and exception.status_code in retryable_status_codes
+                or isinstance(exception, (ConnectionError, NewConnectionError)))
+    
     @tenacity.retry(
         stop=tenacity.stop_after_attempt(10),
         wait=tenacity.wait_exponential(min=1),
@@ -135,9 +139,10 @@ def internal_api_call(func: Callable[PS, RT]) -> Callable[PS, RT]:
         internal_api_endpoint = InternalApiConfig.get_internal_api_endpoint()
         response = requests.post(url=internal_api_endpoint, data=json.dumps(data), headers=headers)
         if response.status_code != 200:
-            raise AirflowException(
+            raise AirflowHttpException(
                 f"Got {response.status_code}:{response.reason} when sending "
-                f"the internal api request: {response.text}"
+                f"the internal api request: {response.text}",
+                response.status_code
             )
         return response.content
 
