@@ -34,6 +34,7 @@ from airflow.api_internal.internal_api_call import internal_api_call
 from airflow.exceptions import AirflowException
 from airflow.models.base import Base
 from airflow.serialization.serialized_objects import add_pydantic_class_type_mapping
+from airflow.stats import Stats
 from airflow.utils import timezone
 from airflow.utils.log.logging_mixin import LoggingMixin
 from airflow.utils.session import NEW_SESSION, provide_session
@@ -224,6 +225,7 @@ class EdgeWorker(BaseModel, LoggingMixin):
         worker.jobs_active = jobs_active
         worker.sysinfo = json.dumps(sysinfo)
         worker.last_update = timezone.utcnow()
+        Stats.incr('edge_worker_heartbeat_count', 1, 1)
         session.commit()
         return worker.queues
 
