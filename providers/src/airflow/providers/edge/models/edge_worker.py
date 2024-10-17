@@ -196,7 +196,7 @@ class EdgeWorker(BaseModel, LoggingMixin):
         worker.jobs_active = jobs_active
         worker.sysinfo = json.dumps(sysinfo)
         worker.last_update = timezone.utcnow()
-        Stats.incr('edge_worker_heartbeat_count', 1, 1)
+        Stats.incr(f'edge_worker.{worker_name}.heartbeat_count', 1, 1)
         session.commit()
 
 
