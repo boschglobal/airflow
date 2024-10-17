@@ -227,9 +227,9 @@ class EdgeWorker(BaseModel, LoggingMixin):
         worker.sysinfo = json.dumps(sysinfo)
         worker.last_update = timezone.utcnow()
         Stats.incr(f'edge_worker.heartbeat_count.{worker_name}', 1, 1)
-        Stats.gauge('edge_worker.state', state , tags={"worker_name": worker_name})
+        Stats.gauge('edge_worker.state', 1 , tags={"worker_name": worker_name, "state": state})
         Stats.gauge('edge_worker.jobs_active', jobs_active , tags={"worker_name": worker_name})
-        Stats.gauge('edge_worker.queues', worker.queue.strip() , tags={"worker_name": worker_name})
+        Stats.gauge('edge_worker.queues', 1 , tags={"worker_name": worker_name, "queues": worker.queue.strip()})
         Stats.gauge('edge_worker.concurrency', sysinfo["concurrency"] , tags={"worker_name": worker_name})
         session.commit()
         return worker.queues
