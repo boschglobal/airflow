@@ -154,10 +154,18 @@ class _EdgeWorkerCli:
         self.queues = queues
         self.concurrency = concurrency
 
-    @staticmethod
-    def signal_handler(sig, frame):
+    def signal_handler(self, sig, frame):
         logger.info("Request to show down Edge Worker received, waiting for jobs to complete.")
         _EdgeWorkerCli.drain = True
+        while self.jobs:
+            self.loop()
+        logger.info("Quitting worker, signal being offline.")
+            try:
+                EdgeWorker.set_state(self.hostname, EdgeWorkerState.OFFLINE, 0, self._get_sysinfo())
+            except EdgeWorkerVersionException:
+                logger.info("Version mismatch of Edge worker and Core. Quitting worker anyway.")
+        remove_existing_pidfile(self.pid_file_path)
+
 
     def _get_sysinfo(self) -> dict:
         """Produce the sysinfo from worker to post to central site."""
@@ -181,6 +189,7 @@ class _EdgeWorkerCli:
                 raise SystemExit("Error: API endpoint is not ready, please set [edge] api_enabled=True.")
             raise SystemExit(str(e))
         _write_pid_to_pidfile(self.pid_file_path)
+        signal.signal(signal.SIGINT, _EdgeWorkerCli.signal_handler)
         try:
             while not _EdgeWorkerCli.drain or self.jobs:
                 self.loop()
