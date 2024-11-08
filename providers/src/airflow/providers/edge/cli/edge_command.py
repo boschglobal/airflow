@@ -181,7 +181,6 @@ class _EdgeWorkerCli:
                 raise SystemExit("Error: API endpoint is not ready, please set [edge] api_enabled=True.")
             raise SystemExit(str(e))
         _write_pid_to_pidfile(self.pid_file_path)
-        signal.signal(signal.SIGINT, _EdgeWorkerCli.signal_handler)
         try:
             while not _EdgeWorkerCli.drain or self.jobs:
                 self.loop()
