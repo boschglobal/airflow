@@ -160,10 +160,10 @@ class _EdgeWorkerCli:
         while self.jobs:
             self.loop()
         logger.info("Quitting worker, signal being offline.")
-            try:
-                EdgeWorker.set_state(self.hostname, EdgeWorkerState.OFFLINE, 0, self._get_sysinfo())
-            except EdgeWorkerVersionException:
-                logger.info("Version mismatch of Edge worker and Core. Quitting worker anyway.")
+        try:
+            EdgeWorker.set_state(self.hostname, EdgeWorkerState.OFFLINE, 0, self._get_sysinfo())
+        except EdgeWorkerVersionException:
+            logger.info("Version mismatch of Edge worker and Core. Quitting worker anyway.")
         remove_existing_pidfile(self.pid_file_path)
 
 
