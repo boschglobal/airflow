@@ -19,10 +19,12 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Any
 
+import requests
 from sqlalchemy import select
 
+from airflow.configuration import conf
 from airflow.providers.edge.models.edge_worker import EdgeWorkerModel, set_metrics
 from airflow.providers.edge.worker_api.auth import jwt_token_authorization_rest
 from airflow.providers.edge.worker_api.datamodels import (
@@ -110,6 +112,21 @@ _worker_queue_doc = Body(
     description="Changes to be applied to current queues of worker",
     examples=[{"new_queues": ["new_queue"], "remove_queues": ["old_queue"]}],
 )
+
+
+@worker_router.post("/otel", dependencies=[Depends(jwt_token_authorization_rest)])
+def otel(data: Any) -> int:
+    """Register a new worker to the backend."""
+    print(f"[*] OTEL received /otel: {data}")
+    host = conf.get("metrics", "otel_host")  # ex: "breeze-otel-collector"
+    port = conf.getint("metrics", "otel_port")
+    ssl_active = conf.getboolean("metrics", "otel_ssl_active")
+    protocol = "https" if ssl_active else "http"
+    endpoint = f"{protocol}://{host}:{port}/v1/metrics"
+    response = requests.request("POST", url=endpoint, data=data)
+    print(f"[*] OTEL send to collector: {response}")
+    response.raise_for_status()
+    return response.status_code
 
 
 @worker_router.post("/{worker_name}", dependencies=[Depends(jwt_token_authorization_rest)])

@@ -20,7 +20,9 @@ import logging
 import os
 import platform
 import signal
+import socket
 import sys
+import threading
 from dataclasses import dataclass
 from datetime import datetime
 from http import HTTPStatus
@@ -43,6 +45,7 @@ from airflow.providers.edge.cli.api_client import (
     jobs_set_state,
     logs_logfile_path,
     logs_push,
+    send_otel_metric,
     worker_register,
     worker_set_state,
 )
@@ -296,6 +299,31 @@ class _EdgeWorkerCli:
                 logger.info("Version mismatch of Edge worker and Core. Quitting worker anyway.")
         finally:
             remove_existing_pidfile(self.pid_file_path)
+
+    def start_otel_forwarder(self):
+        """Forwards the received otel communication to the edge worker api"""
+        local_host = "localhost"
+        local_port = 4318
+
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind((local_host, local_port))
+        server.listen(5)
+        print(f"[*] Listening on {local_host}:{local_port}")
+
+        def handle_client(client_socket):
+            data = client_socket.recv(4096)
+            if len(data) > 0:
+                logger.info("[*] OTEL send send_otel_metric")
+                response = send_otel_metric(data)
+                logger.info("[*] OTEL received response send_otel_metric: %s", response)
+                client_socket.send(response.content)
+            client_socket.close()
+
+        while True:
+            client_socket, addr = server.accept()
+            logger.info("[*] OTEL Accepted connection from %s:%s", addr[0], addr[1])
+            client_handler = threading.Thread(target=handle_client, args=(client_socket,))
+            client_handler.start()
 
     def loop(self):
         """Run a loop of scheduling and monitoring tasks."""

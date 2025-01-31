@@ -114,6 +114,16 @@ def worker_set_state(
     )
 
 
+def send_otel_metric(data=str) -> Any:
+    """Send otel data to api."""
+    logger.info("[*] OTEL send _make_generic_request otel")
+    return _make_generic_request(
+        "PATCH",
+        "otel",
+        data=data,
+    )
+
+
 def jobs_fetch(hostname: str, queues: list[str] | None, free_concurrency: int) -> EdgeJobFetched | None:
     """Fetch a job to execute on the edge worker."""
     result = _make_generic_request(
