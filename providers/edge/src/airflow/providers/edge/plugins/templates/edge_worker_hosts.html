@@ -44,6 +44,7 @@
             -->
             <th>System Information</th>
             <th>Maintenance mode</th>
+            <th>Maintenance Reason</th>
         </tr>
         {% for host in hosts %}
           <tr>
@@ -100,24 +101,43 @@
                 {% endfor %}
               </ul>
             </td>
-            <td>
-              {%- if host.state in ["idle", "running"] -%}
-                <form action="../edgeworkerhosts/status/maintenance/{{ host.worker_name }}/on" method="POST">
-                  <button type="submit" style="padding: 10px 20px; background-color: blue; color: white; border: none; border-radius: 5px;">
+            {%- if host.state in ["idle", "running"] -%}
+              <form action="../edgeworkerhosts/status/maintenance/{{ host.worker_name }}/on" method="POST">
+                <td>
+                  <button type="submit" {% if not maintenance_comment %}disabled{% endif %} style="padding: 10px 20px; background-color: blue; color: white; border: none; border-radius: 5px;">
                       Enter
                   </button>
-                </form>
-              {%- elif host.state in ["maintenance pending", "maintenance mode", "maintenance request"] -%}
-                <form action="../edgeworkerhosts/status/maintenance/{{ host.worker_name }}/off" method="POST">
+                </td>
+                <td>
+                  <input type="text" name="maintenance_comment" value="{{ maintenance_comment }}" oninput="toggleButton(this)">
+                </td>
+              </form>
+            {%- elif host.state in ["maintenance pending", "maintenance mode", "maintenance request"] -%}
+              <form action="../edgeworkerhosts/status/maintenance/{{ host.worker_name }}/off" method="POST">
+                <td>
                   <button type="submit" style="padding: 10px 20px; background-color: blue; color: white; border: none; border-radius: 5px;">
                       Exit
                   </button>
-                </form>
-              {% endif %}
+                </td>
+                <td>
+                  <input type="text" name="maintenance_comment" value="{{ maintenance_comment }}">
+                </td>
+              </form>
+            {%- else -%}
+            <td></td>
+            <td>
+              <input type="text" name="maintenance_comment" value="{{ maintenance_comment }}">
             </td>
+            {% endif %}
           </tr>
         {% endfor %}
       </table>
       {% endif %}
     {% endblock %}
+    <script>
+      function toggleButton(input) {
+          const button = input.parentElement.nextElementSibling.querySelector('button');
+          button.disabled = input.value.trim() === '';
+      }
+  </script>
 <html>
