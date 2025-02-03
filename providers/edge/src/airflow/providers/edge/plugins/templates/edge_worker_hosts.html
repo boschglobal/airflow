@@ -104,12 +104,12 @@
             {%- if host.state in ["idle", "running"] -%}
               <form action="../edgeworkerhosts/status/maintenance/{{ host.worker_name }}/on" method="POST">
                 <td>
-                  <button type="submit" style="padding: 10px 20px; background-color: blue; color: white; border: none; border-radius: 5px;" id="maintenance_button-{{ loop.index }}">
+                  <button type="submit" style="padding: 10px 20px; background-color: blue; color: white; border: none; border-radius: 5px;">
                       Enter
                   </button>
                 </td>
                 <td>
-                  <input type="text" name="maintenance_comment" value="{{ maintenance_comment }}" id="maintenance_comment-{{ loop.index }}">
+                  <textarea  name="maintenance_comment" rows="3" value="{{ maintenance_comment }}" required>
                 </td>
               </form>
             {%- elif host.state in ["maintenance pending", "maintenance mode", "maintenance request"] -%}
@@ -120,26 +120,16 @@
                   </button>
                 </td>
                 <td>
-                  <input type="text" name="maintenance_comment" value="{{ maintenance_comment }}">
+                  <textarea  name="maintenance_comment" rows="3" value="{{ maintenance_comment }}">
                 </td>
               </form>
             {%- else -%}
             <td></td>
             <td>
-              <input type="text" name="maintenance_comment" value="{{ maintenance_comment }}">
+              <textarea  name="maintenance_comment" rows="3" value="{{ maintenance_comment }}" required>
             </td>
             {% endif %}
           </tr>
-          <script>
-            document.getElementById("maintenance_comment-{{ loop.index }}").addEventListener("keyup", function() {
-              var nameInput = document.getElementById('maintenance_comment-{{ loop.index }}').value;
-              if (nameInput != "") {
-                  document.getElementById('maintenance_button-{{ loop.index }}').removeAttribute("disabled");
-              } else {
-                  document.getElementById('maintenance_button-{{ loop.index }}').setAttribute("disabled", null);
-              }
-          });
-        </script>
         {% endfor %}
       </table>
       {% endif %}
