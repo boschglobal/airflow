@@ -109,7 +109,7 @@
                   </button>
                 </td>
                 <td>
-                  <textarea  name="maintenance_comment" rows="3" value="{{ maintenance_comment }}" required>
+                  <textarea  name="maintenance_comment" rows="3" value="{{ maintenance_comment }}" required></textarea>
                 </td>
               </form>
             {%- elif host.state in ["maintenance pending", "maintenance mode", "maintenance request"] -%}
@@ -120,13 +120,13 @@
                   </button>
                 </td>
                 <td>
-                  <textarea  name="maintenance_comment" rows="3" value="{{ maintenance_comment }}">
+                  <textarea  name="maintenance_comment" rows="3" value="{{ maintenance_comment }}"></textarea>
                 </td>
               </form>
             {%- else -%}
             <td></td>
             <td>
-              <textarea  name="maintenance_comment" rows="3" value="{{ maintenance_comment }}" required>
+              <textarea  name="maintenance_comment" rows="3" value="{{ maintenance_comment }}"></textarea>
             </td>
             {% endif %}
           </tr>
