@@ -69,6 +69,22 @@ class EdgeWorkerState(str, Enum):
     """Worker was shut down in maintenance mode. It will be in maintenance mode when restarted."""
 
 
+EDGE_WORKER_STATE_GAUGE_MAPPING = {
+    EdgeWorkerState.UNKNOWN: 0,
+    EdgeWorkerState.OFFLINE: 0,
+    EdgeWorkerState.OFFLINE_MAINTENANCE: 0,
+    EdgeWorkerState.STARTING: 1,
+    EdgeWorkerState.IDLE: 2,
+    EdgeWorkerState.RUNNING: 3,
+    EdgeWorkerState.TERMINATING: 4,
+    EdgeWorkerState.MAINTENANCE_REQUEST: 5,
+    EdgeWorkerState.MAINTENANCE_PENDING: 5,
+    EdgeWorkerState.MAINTENANCE_MODE: 5,
+    EdgeWorkerState.MAINTENANCE_EXIT: 5,
+}
+"""Defines the mapping of state gauge value metric output and state."""
+
+
 class EdgeWorkerModel(Base, LoggingMixin):
     """A Edge Worker instance which reports the state and health."""
 
@@ -145,13 +161,12 @@ def set_metrics(
 ) -> None:
     """Set metric of edge worker."""
     queues = queues if queues else []
-    connected = state not in (EdgeWorkerState.UNKNOWN, EdgeWorkerState.OFFLINE)
 
-    Stats.gauge(f"edge_worker.state.{worker_name}", int(connected))
+    Stats.gauge(f"edge_worker.state.{worker_name}", EDGE_WORKER_STATE_GAUGE_MAPPING[state])
     Stats.gauge(
         "edge_worker.state",
-        int(connected),
-        tags={"name": worker_name, "state": state},
+        EDGE_WORKER_STATE_GAUGE_MAPPING[state],
+        tags={"name": worker_name},
     )
 
     Stats.gauge(f"edge_worker.jobs_active.{worker_name}", jobs_active)

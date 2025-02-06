@@ -27,6 +27,14 @@
 Changelog
 ---------
 
+0.14.1pre0
+..........
+
+Fix
+~~~
+
+* ``edge_worker.state gauge returns int value depending on the worker state.``
+
 0.13.1pre0
 ..........
 
