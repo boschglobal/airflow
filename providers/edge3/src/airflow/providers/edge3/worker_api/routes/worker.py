@@ -101,7 +101,7 @@ _worker_state_doc = Body(
             "sysinfo": {
                 "concurrency": 4,
                 "airflow_version": "2.10.0",
-                "edge_provider_version": "1.0.0",
+                "edge_provider_version": "1.0.1",
             },
         }
     ],

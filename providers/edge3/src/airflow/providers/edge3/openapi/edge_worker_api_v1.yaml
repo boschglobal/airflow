@@ -19,7 +19,7 @@
 openapi: 3.0.2
 info:
   title: Airflow Edge Worker API
-  version: 1.0.0
+  version: 1.0.1
   description: |
     This is Airflow Edge Worker API - which is a the access endpoint for workers
     running on remote sites serving for Apache Airflow jobs. It also proxies internal API
@@ -72,7 +72,7 @@ paths:
                 sysinfo:
                   airflow_version: 2.10.0
                   concurrency: 4
-                  edge_provider_version: 1.0.0
+                  edge_provider_version: 1.0.1
               title: Worker State
         required: true
       responses:
@@ -139,7 +139,7 @@ paths:
                 sysinfo:
                   airflow_version: 2.10.0
                   concurrency: 4
-                  edge_provider_version: 1.0.0
+                  edge_provider_version: 1.0.1
               title: Worker State
         required: true
       responses:

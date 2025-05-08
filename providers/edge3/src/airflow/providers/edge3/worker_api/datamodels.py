@@ -137,7 +137,7 @@ class WorkerStateBody(WorkerQueuesBase):
                     "concurrency": 4,
                     "free_concurrency": 3,
                     "airflow_version": "2.0.0",
-                    "edge_provider_version": "1.0.0",
+                    "edge_provider_version": "1.0.1",
                 }
             ],
         ),
