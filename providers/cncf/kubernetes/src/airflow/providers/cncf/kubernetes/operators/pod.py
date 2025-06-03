@@ -168,6 +168,7 @@ class KubernetesPodOperator(BaseOperator):
         Takes a sequence of containers, a single container name or True. If True,
         all the containers logs are published. Works in conjunction with get_logs param.
         The default value is the base container.
+    :param: log_prefix: Add container name as prefix to logs.
     :param image_pull_policy: Specify a policy to cache or always pull an image.
     :param annotations: non-identifying metadata you can attach to the Pod.
         Can be a large range of data, and can include characters
@@ -297,6 +298,7 @@ class KubernetesPodOperator(BaseOperator):
         base_container_status_polling_interval: float = 1,
         init_container_logs: Iterable[str] | str | Literal[True] | None = None,
         container_logs: Iterable[str] | str | Literal[True] | None = None,
+        log_prefix: bool = True,
         image_pull_policy: str | None = None,
         annotations: dict | None = None,
         container_resources: k8s.V1ResourceRequirements | None = None,
@@ -378,6 +380,7 @@ class KubernetesPodOperator(BaseOperator):
         self.base_container_status_polling_interval = base_container_status_polling_interval
         self.init_container_logs = init_container_logs
         self.container_logs = container_logs or self.base_container_name
+        self.log_prefix = log_prefix
         self.image_pull_policy = image_pull_policy
         self.node_selector = node_selector or {}
         self.annotations = annotations or {}
@@ -939,7 +942,10 @@ class KubernetesPodOperator(BaseOperator):
             for raw_line in logs:
                 line = raw_line.decode("utf-8", errors="backslashreplace").rstrip("\n")
                 if line:
-                    self.log.info("[%s] logs: %s", self.base_container_name, line)
+                    if self.log_prefix:
+                        self.log.info("[%s] logs: %s", self.base_container_name, line)
+                    else:
+                        self.log.info(line)
         except (HTTPError, ApiException) as e:
             self.log.warning(
                 "Reading of logs interrupted with error %r; will retry. "
