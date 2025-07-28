@@ -104,6 +104,7 @@ class TaskDecoratorCollection:
         pip_install_options: list[str] | None = None,
         skip_on_exit_code: int | Container[int] | None = None,
         index_urls: None | Collection[str] | str = None,
+        index_urls_from_connection_ids: None | Collection[str] | str = None,
         venv_cache_path: None | str = None,
         show_return_value_in_logs: bool = True,
         env_vars: dict[str, str] | None = None,
@@ -135,6 +136,8 @@ class TaskDecoratorCollection:
             exit code will be treated as a failure.
         :param index_urls: an optional list of index urls to load Python packages from.
             If not provided the system pip conf will be used to source packages from.
+        :param index_urls_from_connection_ids: An optional list of ``PackageIndex`` connection IDs.
+            Will be appended to ``index_urls``.
         :param venv_cache_path: Optional path to the virtual environment parent folder in which the
             virtual environment will be cached, creates a sub-folder venv-{hash} whereas hash will be
             replaced with a checksum of requirements. If not provided the virtual environment will be
@@ -228,6 +231,7 @@ class TaskDecoratorCollection:
         pip_install_options: list[str] | None = None,
         skip_on_exit_code: int | Container[int] | None = None,
         index_urls: None | Collection[str] | str = None,
+        index_urls_from_connection_ids: None | Collection[str] | str = None,
         venv_cache_path: None | str = None,
         show_return_value_in_logs: bool = True,
         **kwargs,
@@ -260,6 +264,8 @@ class TaskDecoratorCollection:
             exit code will be treated as a failure.
         :param index_urls: an optional list of index urls to load Python packages from.
             If not provided the system pip conf will be used to source packages from.
+        :param index_urls_from_connection_ids: An optional list of ``PackageIndex`` connection IDs.
+            Will be appended to ``index_urls``.
         :param venv_cache_path: Optional path to the virtual environment parent folder in which the
             virtual environment will be cached, creates a sub-folder venv-{hash} whereas hash will be replaced
             with a checksum of requirements. If not provided the virtual environment will be created and
