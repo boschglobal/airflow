@@ -46,7 +46,7 @@ from airflow.providers.common.compat.sdk import (
     AirflowSkipException,
     TaskDeferred,
 )
-from airflow.sdk import timezone
+from airflow.utils import timezone
 from airflow.utils.session import create_session
 from airflow.utils.types import DagRunType
 
