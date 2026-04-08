@@ -38,9 +38,11 @@ from airflow.api_fastapi.execution_api.versions.v2026_04_06 import (
     MovePreviousRunEndpoint,
     RemoveUpstreamMapIndexesField,
 )
+from airflow.api_fastapi.execution_api.versions.v2026_04_08 import AddForceFieldToRetryPayload
 
 bundle = VersionBundle(
     HeadVersion(),
+    Version("2026-04-08", AddForceFieldToRetryPayload),
     Version(
         "2026-04-06",
         AddPartitionKeyField,

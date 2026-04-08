@@ -184,6 +184,10 @@ class TIRetryStatePayload(StrictBaseModel):
     ]
     end_date: UtcDateTime
     rendered_map_index: str | None = None
+    force: bool = False
+    """When True, force a retry even if retries are exhausted by incrementing max_tries."""
+    max_forced_retries: int = 10
+    """Hard limit on the number of forced retries to prevent infinite retry loops."""
 
 
 class TISkippedDownstreamTasksStatePayload(StrictBaseModel):

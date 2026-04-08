@@ -1213,6 +1213,7 @@ def run(
     from airflow.sdk.exceptions import (
         AirflowFailException,
         AirflowRescheduleException,
+        AirflowRetryException,
         AirflowSensorTimeout,
         AirflowSkipException,
         AirflowTaskTerminated,
@@ -1326,6 +1327,17 @@ def run(
             rendered_map_index=ti.rendered_map_index,
         )
         state = TaskInstanceState.FAILED
+        error = e
+    except AirflowRetryException as e:
+        # If AirflowRetryException is raised, force a retry even if retries are exhausted.
+        log.info("Task requested forced retry", max_forced_retries=e.max_forced_retries)
+        ti.end_date = datetime.now(tz=timezone.utc)
+        msg = RetryTask(
+            end_date=ti.end_date,
+            force=True,
+            max_forced_retries=e.max_forced_retries,
+        )
+        state = TaskInstanceState.UP_FOR_RETRY
         error = e
     except (AirflowTaskTimeout, AirflowException, AirflowRuntimeError) as e:
         # We should allow retries if the task has defined it.

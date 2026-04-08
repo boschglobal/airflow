@@ -109,6 +109,27 @@ class AirflowFailException(AirflowException):
     """Raise when the task should be failed without retrying."""
 
 
+class AirflowRetryException(AirflowException):
+    """
+    Raise when the task should be retried, even if no retries were configured.
+
+    This is the inverse of ``AirflowFailException``: while ``AirflowFailException``
+    forces a task to fail immediately without retrying, ``AirflowRetryException``
+    forces a retry even when the retry count is exhausted or was never set.
+
+    The server will increment ``max_tries`` to accommodate the extra retry.
+    A hard limit of ``max_forced_retries`` (default 10) prevents infinite retry loops.
+
+    :param max_forced_retries: Maximum number of forced retries allowed. Default 10.
+    """
+
+    def __init__(self, *args, max_forced_retries: int = 10, **kwargs):
+        super().__init__(*args, **kwargs)
+        if max_forced_retries < 1:
+            raise ValueError("max_forced_retries must be at least 1")
+        self.max_forced_retries = max_forced_retries
+
+
 class _AirflowExecuteWithInactiveAssetExecption(AirflowFailException):
     main_message: str
 

@@ -72,6 +72,7 @@ from airflow.sdk.exceptions import (
     AirflowException,
     AirflowFailException,
     AirflowRescheduleException,
+    AirflowRetryException,
     AirflowRuntimeError,
     AirflowSensorTimeout,
     AirflowSkipException,
@@ -109,6 +110,7 @@ from airflow.sdk.execution_time.comms import (
     PreviousTIResult,
     PrevSuccessfulDagRunResult,
     RescheduleTask,
+    RetryTask,
     SetRenderedFields,
     SetXCom,
     SkipDownstreamTasks,
@@ -1351,6 +1353,65 @@ def test_airflow_fail_exception_does_not_retry(
     assert ti.state == TaskInstanceState.FAILED
     mock_supervisor_comms.send.assert_called_with(
         msg=TaskState(state=TaskInstanceState.FAILED, end_date=instant)
+    )
+
+
+@pytest.mark.parametrize("should_retry", [False, True])
+def test_airflow_retry_exception_forces_retry(
+    time_machine, create_runtime_ti, mock_supervisor_comms, should_retry
+):
+    """Test that AirflowRetryException forces a retry regardless of should_retry flag."""
+
+    def retry_me():
+        raise AirflowRetryException("please retry")
+
+    task = PythonOperator(
+        task_id="test_raise_airflow_retry_exception",
+        python_callable=retry_me,
+        retries=0,
+    )
+
+    ti = create_runtime_ti(
+        task=task,
+        dag_id=f"test_airflow_retry_exception_force_{should_retry}",
+        should_retry=should_retry,
+    )
+
+    instant = timezone.datetime(2024, 12, 3, 10, 0)
+    time_machine.move_to(instant, tick=False)
+
+    run(ti, context=ti.get_template_context(), log=mock.MagicMock())
+
+    assert ti.state == TaskInstanceState.UP_FOR_RETRY
+    mock_supervisor_comms.send.assert_called_with(
+        msg=RetryTask(end_date=instant, force=True, max_forced_retries=10)
+    )
+
+
+def test_airflow_retry_exception_custom_max_forced_retries(
+    time_machine, create_runtime_ti, mock_supervisor_comms
+):
+    """Test that AirflowRetryException respects custom max_forced_retries."""
+
+    def retry_me():
+        raise AirflowRetryException("please retry", max_forced_retries=5)
+
+    task = PythonOperator(
+        task_id="test_retry_custom_limit",
+        python_callable=retry_me,
+        retries=0,
+    )
+
+    ti = create_runtime_ti(task=task, dag_id="test_retry_custom_limit")
+
+    instant = timezone.datetime(2024, 12, 3, 10, 0)
+    time_machine.move_to(instant, tick=False)
+
+    run(ti, context=ti.get_template_context(), log=mock.MagicMock())
+
+    assert ti.state == TaskInstanceState.UP_FOR_RETRY
+    mock_supervisor_comms.send.assert_called_with(
+        msg=RetryTask(end_date=instant, force=True, max_forced_retries=5)
     )
 
 

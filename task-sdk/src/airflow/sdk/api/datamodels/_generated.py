@@ -27,7 +27,7 @@ from uuid import UUID
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, JsonValue, RootModel
 
-API_VERSION: Final[str] = "2026-04-06"
+API_VERSION: Final[str] = "2026-04-08"
 
 
 class AssetAliasReferenceAssetEventDagRun(BaseModel):
@@ -274,6 +274,8 @@ class TIRetryStatePayload(BaseModel):
     state: Annotated[Literal["up_for_retry"] | None, Field(title="State")] = "up_for_retry"
     end_date: Annotated[AwareDatetime, Field(title="End Date")]
     rendered_map_index: Annotated[str | None, Field(title="Rendered Map Index")] = None
+    force: Annotated[bool | None, Field(title="Force")] = False
+    max_forced_retries: Annotated[int | None, Field(title="Max Forced Retries")] = 10
 
 
 class TISkippedDownstreamTasksStatePayload(BaseModel):

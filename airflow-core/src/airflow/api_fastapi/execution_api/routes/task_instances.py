@@ -382,7 +382,9 @@ def ti_update_state(
         )
 
     # We exclude_unset to avoid updating fields that are not set in the payload
-    data = ti_patch_payload.model_dump(exclude={"task_outlets", "outlet_events"}, exclude_unset=True)
+    data = ti_patch_payload.model_dump(
+        exclude={"task_outlets", "outlet_events", "force", "max_forced_retries"}, exclude_unset=True
+    )
     query = update(TI).where(TI.id == task_instance_id).values(data)
 
     try:
@@ -515,6 +517,25 @@ def _create_ti_state_update_query_and_update_state(
                 _handle_fail_fast_for_dag(ti=ti, dag_id=dag_id, session=session, dag_bag=dag_bag)
         elif isinstance(ti_patch_payload, TIRetryStatePayload):
             if ti is not None:
+                if ti_patch_payload.force:
+                    # AirflowRetryException: force a retry even if retries are exhausted.
+                    # Count how many forced retries have already happened (tries beyond original max_tries).
+                    forced_retries_used = max(0, ti.try_number - ti.max_tries)
+                    if forced_retries_used >= ti_patch_payload.max_forced_retries:
+                        log.warning(
+                            "Forced retry limit reached, failing task",
+                            try_number=ti.try_number,
+                            max_tries=ti.max_tries,
+                            max_forced_retries=ti_patch_payload.max_forced_retries,
+                        )
+                        query = query.values(state=TaskInstanceState.FAILED)
+                        updated_state = TaskInstanceState.FAILED
+                        _handle_fail_fast_for_dag(ti=ti, dag_id=dag_id, session=session, dag_bag=dag_bag)
+                        _emit_task_span(ti, state=updated_state)
+                        return query, updated_state
+                    # Increment max_tries to allow the extra retry
+                    ti.max_tries = ti.max_tries + 1
+                    query = query.values(max_tries=ti.max_tries)
                 ti.prepare_db_for_next_try(session)
         elif isinstance(ti_patch_payload, TISuccessStatePayload):
             if ti is not None:

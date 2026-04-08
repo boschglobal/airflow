@@ -1448,6 +1448,62 @@ class TestTIUpdateState:
         assert tih.task_instance_id
         assert tih.task_instance_id != ti.id
 
+    def test_ti_update_state_forced_retry_increments_max_tries(self, client, session, create_task_instance):
+        """Test that a forced retry (AirflowRetryException) increments max_tries."""
+        ti = create_task_instance(
+            task_id="test_forced_retry",
+            state=State.RUNNING,
+        )
+        original_max_tries = ti.max_tries
+        session.commit()
+
+        response = client.patch(
+            f"/execution/task-instances/{ti.id}/state",
+            json={
+                "state": State.UP_FOR_RETRY,
+                "end_date": DEFAULT_END_DATE.isoformat(),
+                "force": True,
+                "max_forced_retries": 10,
+            },
+        )
+
+        assert response.status_code == 204
+
+        ti = session.scalar(
+            select(TaskInstance).filter_by(task_id=ti.task_id, run_id=ti.run_id, dag_id=ti.dag_id)
+        )
+        assert ti.state == State.UP_FOR_RETRY
+        assert ti.max_tries == original_max_tries + 1
+
+    def test_ti_update_state_forced_retry_limit_reached(self, client, session, create_task_instance):
+        """Test that forced retry fails the task when the limit is reached."""
+        ti = create_task_instance(
+            task_id="test_forced_retry_limit",
+            state=State.RUNNING,
+        )
+        # Set try_number so forced retries are exhausted: try_number - max_tries >= max_forced_retries
+        ti.max_tries = 0
+        ti.try_number = 3
+        session.commit()
+
+        response = client.patch(
+            f"/execution/task-instances/{ti.id}/state",
+            json={
+                "state": State.UP_FOR_RETRY,
+                "end_date": DEFAULT_END_DATE.isoformat(),
+                "force": True,
+                "max_forced_retries": 3,
+            },
+        )
+
+        assert response.status_code == 204
+
+        session.expire_all()
+        ti = session.scalar(
+            select(TaskInstance).filter_by(task_id=ti.task_id, run_id=ti.run_id, dag_id=ti.dag_id)
+        )
+        assert ti.state == State.FAILED
+
     @pytest.mark.parametrize(
         "target_state",
         [

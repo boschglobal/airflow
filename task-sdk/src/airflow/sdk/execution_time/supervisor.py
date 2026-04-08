@@ -1273,10 +1273,17 @@ class ActivitySubprocess(WatchedSubprocess):
             self._terminal_state = msg.state
             self._task_end_time_monotonic = time.monotonic()
             self._rendered_map_index = msg.rendered_map_index
+            # When force=True, the task requested a retry via AirflowRetryException
+            # even if retries were exhausted. Override _should_retry so the supervisor
+            # also reports UP_FOR_RETRY if the process exits non-zero.
+            if msg.force:
+                self._should_retry = True
             self.client.task_instances.retry(
                 id=self.id,
                 end_date=msg.end_date,
                 rendered_map_index=self._rendered_map_index,
+                force=msg.force,
+                max_forced_retries=msg.max_forced_retries,
             )
         elif isinstance(msg, GetConnection):
             conn = self.client.connections.get(msg.conn_id)
