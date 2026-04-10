@@ -1111,7 +1111,9 @@ class KubernetesPodOperator(BaseOperator):
             self.patch_already_checked(remote_pod, reraise=False)
 
         if istio_enabled or self.do_xcom_push:
-            failed = not container_is_succeeded(remote_pod, self.base_container_name)
+            failed = pod_phase != PodPhase.SUCCEEDED and not container_is_succeeded(
+                remote_pod, self.base_container_name
+            )
         else:
             failed = pod_phase != PodPhase.SUCCEEDED
 
