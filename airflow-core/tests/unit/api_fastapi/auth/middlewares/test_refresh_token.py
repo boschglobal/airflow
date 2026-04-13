@@ -159,8 +159,12 @@ class TestJWTRefreshMiddleware:
         call_next = AsyncMock(return_value=Response())
         response = await middleware.dispatch(mock_request, call_next)
 
-        set_cookie_headers = response.headers.get("set-cookie", "")
-        assert "Path=/team-a/" in set_cookie_headers
+        set_cookie_headers = response.headers.getlist("set-cookie")
+        assert any("Path=/team-a/" in h for h in set_cookie_headers)
+        # Stale root-path cookie must also be cleared
+        assert any(
+            "Path=/" in h and "Path=/team-a/" not in h and "Max-Age=0" in h for h in set_cookie_headers
+        )
 
     @patch("airflow.api_fastapi.auth.middlewares.refresh_token.get_cookie_path", return_value="/team-a/")
     @patch.object(

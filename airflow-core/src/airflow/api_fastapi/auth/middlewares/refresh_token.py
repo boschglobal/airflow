@@ -76,7 +76,7 @@ class JWTRefreshMiddleware(BaseHTTPMiddleware):
                 # Older Airflow instances may have set the cookie there;
                 # without this, the root-path cookie keeps being sent on
                 # every request, causing an infinite redirect loop.
-                if new_token == "" and cookie_path != "/":
+                if cookie_path != "/":
                     response.delete_cookie(
                         key=COOKIE_NAME_JWT_TOKEN,
                         path="/",
