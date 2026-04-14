@@ -344,7 +344,9 @@ function install_python() {
         GNUPGHOME="$(mktemp -d)"; export GNUPGHOME
         local gpg_key="${keys[${major_minor_version}]}"
         echo "Using GPG key ${gpg_key}"
-        gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys "${gpg_key}"
+        # Fallback: fetch key via HTTPS (works behind proxies where gpg/dirmngr does not)
+        gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys "${gpg_key}" \
+            || wget -q -O - "https://keys.openpgp.org/vks/v1/by-fingerprint/${gpg_key}" | gpg --batch --import
         gpg --batch --verify python.tar.xz.asc python.tar.xz
         gpgconf --kill all
         rm -rf "${GNUPGHOME}" python.tar.xz.asc

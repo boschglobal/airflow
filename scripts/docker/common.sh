@@ -237,7 +237,13 @@ function common::import_trusted_gpg() {
     set +e
     for keyserver in $(shuf -e "${keyservers[@]}"); do
         echo "${COLOR_BLUE}Try to receive GPG public key ${key} from ${keyserver}${COLOR_RESET}"
+        local keyserver_host="${keyserver#hkps://}"
+        keyserver_host="${keyserver_host#hkp://}"
+        local search_key="${key#0x}"
         gpg --keyserver "${keyserver}" --recv-keys "${key}" 2>&1 && break
+        # Fallback: fetch key via HTTPS (works behind proxies where gpg/dirmngr does not)
+        wget -q -O - "https://${keyserver_host}/pks/lookup?op=get&options=mr&search=0x${search_key}" | gpg --batch --import 2>/dev/null \
+            && gpg --list-keys "${key}" >/dev/null 2>&1 && break
         echo "${COLOR_YELLOW}Unable to receive GPG public key ${key} from ${keyserver}${COLOR_RESET}"
     done
     set -e
