@@ -266,6 +266,11 @@ class TestKubernetesPodOperator:
 
         remote_pod_mock = MagicMock()
         remote_pod_mock.status.phase = "Succeeded"
+        base_container_status = MagicMock()
+        base_container_status.name = operator.base_container_name
+        base_container_status.state.terminated.exit_code = 0
+        remote_pod_mock.status.container_statuses = [base_container_status]
+        remote_pod_mock.status.init_container_statuses = None
         self.await_pod_mock.return_value = remote_pod_mock
         operator.execute(context=context)
         return self.await_start_mock.call_args.kwargs["pod"], context
@@ -1948,6 +1953,11 @@ class TestKubernetesPodOperator:
         mock_extract_xcom.return_value = "{}"
         remote_pod_mock = MagicMock()
         remote_pod_mock.status.phase = "Succeeded"
+        base_container_status = MagicMock()
+        base_container_status.name = "base"
+        base_container_status.state.terminated.exit_code = 0
+        remote_pod_mock.status.container_statuses = [base_container_status]
+        remote_pod_mock.status.init_container_statuses = None
         self.await_pod_mock.return_value = remote_pod_mock
         pod, _ = self.run_pod(k)
 
