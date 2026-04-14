@@ -754,7 +754,7 @@ class PodManager(LoggingMixin):
         :param pod: pod spec that will be monitored
         :param container_name: name of the container within the pod
         :param do_xcom_push: whether to push XComs
-        :return: tuple[State, str | None]
+        :return: V1Pod
         """
         while True:
             remote_pod = self.read_pod(pod)
