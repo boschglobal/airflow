@@ -54,6 +54,7 @@ def test_remote_task_handler_kwargs_not_leaked_to_local_task_handler(
     remote_base, remote_io_path, restore_local_settings
 ):
     """Verify remote_task_handler_kwargs are passed to RemoteLogIO and not leaked to FileTaskHandler."""
+    pytest.importorskip(remote_io_path.rsplit(".", 1)[0])
     user_kwargs = {"remote_base": "ignored", "custom_key": "v"}
     with (
         mock.patch(remote_io_path) as mock_remote_io,
