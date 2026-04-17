@@ -2131,6 +2131,8 @@ ENV PATH="${AIRFLOW_USER_HOME_DIR}/.local/bin:/usr/python/bin:${PATH}" \
 
 COPY --from=scripts common.sh /scripts/docker/
 
+COPY scripts/docker/keys/ /scripts/docker/keys/
+
 # Only copy mysql/mssql installation scripts for now - so that changing the other
 # scripts which are needed much later will not invalidate the docker layer here.
 COPY --from=scripts install_mysql.sh install_mssql.sh install_postgres.sh /scripts/docker/
