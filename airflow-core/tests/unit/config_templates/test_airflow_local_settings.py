@@ -36,7 +36,7 @@ def restore_local_settings():
 
 
 @pytest.mark.parametrize(
-    "remote_base, remote_io_path",
+    ("remote_base", "remote_io_path"),
     [
         ("s3://bucket/path", "airflow.providers.amazon.aws.log.s3_task_handler.S3RemoteLogIO"),
         ("wasb-logs", "airflow.providers.microsoft.azure.log.wasb_task_handler.WasbRemoteLogIO"),
