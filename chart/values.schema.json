@@ -5205,6 +5205,18 @@
                         "exec airflow triggerer"
                     ]
                 },
+                "podManagementPolicy": {
+                    "description": "Specifies the policy for managing pods within the Airflow triggerer. Only applicable to StatefulSet.",
+                    "type": [
+                        "null",
+                        "string"
+                    ],
+                    "default": null,
+                    "enum": [
+                        "OrderedReady",
+                        "Parallel"
+                    ]
+                },
                 "updateStrategy": {
                     "description": "Specifies the strategy used to replace old Pods by new ones when deployed as a StatefulSet.",
                     "type": [

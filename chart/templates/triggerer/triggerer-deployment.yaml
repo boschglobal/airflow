@@ -65,6 +65,9 @@ spec:
       tier: airflow
       component: triggerer
       release: {{ .Release.Name }}
+  {{- if and $persistence .Values.triggerer.podManagementPolicy }}
+  podManagementPolicy: {{ .Values.triggerer.podManagementPolicy }}
+  {{- end }}
   {{- if and $persistence .Values.triggerer.updateStrategy }}
   updateStrategy: {{- toYaml .Values.triggerer.updateStrategy | nindent 4 }}
   {{- end }}

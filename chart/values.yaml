@@ -2737,6 +2737,10 @@ triggerer:
   # Args to use when running Airflow triggerer (templated).
   args: ["bash", "-c", "exec airflow triggerer"]
 
+  # Allow relaxing ordering guarantees for Airflow triggerer
+  # while preserving its uniqueness and identity
+  # podManagementPolicy: Parallel
+
   # Update Strategy when triggerer is deployed as a StatefulSet
   updateStrategy: ~
   # Update Strategy when triggerer is deployed as a Deployment

@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import jmespath
 import pytest
-from chart_utils.helm_template_generator import render_chart
+from chart_utils.helm_template_generator import HelmFailedError, render_chart
 from chart_utils.log_groomer import LogGroomerTestBase
 
 
@@ -564,6 +564,43 @@ class TestTriggerer:
             show_only=["templates/triggerer/triggerer-deployment.yaml"],
         )
         assert jmespath.search("spec.template.spec.containers[0].resources", docs[0]) == {}
+
+    def test_pod_management_policy_default(self):
+        docs = render_chart(show_only=["templates/triggerer/triggerer-deployment.yaml"])
+        assert jmespath.search("spec.podManagementPolicy", docs[0]) is None
+
+    @pytest.mark.parametrize(
+        ("pod_management_policy", "expected"),
+        [
+            ("Parallel", "Parallel"),
+            ("OrderedReady", "OrderedReady"),
+        ],
+    )
+    def test_pod_management_policy(self, pod_management_policy, expected):
+        docs = render_chart(
+            values={"triggerer": {"podManagementPolicy": pod_management_policy}},
+            show_only=["templates/triggerer/triggerer-deployment.yaml"],
+        )
+        assert jmespath.search("spec.podManagementPolicy", docs[0]) == expected
+
+    def test_pod_management_policy_not_set_when_persistence_disabled(self):
+        docs = render_chart(
+            values={
+                "triggerer": {
+                    "persistence": {"enabled": False},
+                    "podManagementPolicy": "Parallel",
+                },
+            },
+            show_only=["templates/triggerer/triggerer-deployment.yaml"],
+        )
+        assert jmespath.search("spec.podManagementPolicy", docs[0]) is None
+
+    def test_pod_management_policy_not_valid_value(self):
+        with pytest.raises(HelmFailedError):
+            render_chart(
+                values={"triggerer": {"podManagementPolicy": "Test"}},
+                show_only=["templates/triggerer/triggerer-deployment.yaml"],
+            )
 
     @pytest.mark.parametrize(
         ("persistence", "update_strategy", "expected_update_strategy"),
