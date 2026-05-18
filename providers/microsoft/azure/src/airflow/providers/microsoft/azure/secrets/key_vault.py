@@ -207,7 +207,7 @@ class AzureKeyVaultBackend(BaseSecretsBackend, LoggingMixin):
             path = f"{secret_id}"
         else:
             path = f"{path_prefix}{sep}{secret_id}"
-        return path.replace("_", sep)
+        return path.replace("_", sep).replace(".", sep)
 
     def _build_team_secret_name(self, path_prefix: str, team_name: str, secret_id: str) -> str:
         """Build a team-scoped secret name using a dedicated separator before the secret id."""
@@ -238,6 +238,13 @@ class AzureKeyVaultBackend(BaseSecretsBackend, LoggingMixin):
     def _get_secret_value(self, path_prefix: str, secret_id: str) -> str | None:
         """Get an Azure Key Vault secret value for the given prefix and key."""
         name = self.build_path(path_prefix, secret_id, self.sep)
+        if not re.fullmatch(r"[0-9a-zA-Z-]+", name):
+            self.log.debug(
+                "Secret name %r contains invalid characters. "
+                "Azure Key Vault secret names can only contain alphanumeric characters and dashes.",
+                name,
+            )
+            return None
         try:
             secret = self.client.get_secret(name=name)
             return secret.value

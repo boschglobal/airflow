@@ -188,3 +188,15 @@ class TestAzureKeyVaultBackend:
         backend.client
         assert not mock_defaul_azure_credential.called
         mock_client_secret_credential.assert_called_once()
+
+    @mock.patch(f"{KEY_VAULT_MODULE}.AzureKeyVaultBackend.client")
+    def test_get_variable_replaces_dots_in_secret_name(self, mock_client):
+        """
+        Test that dots in variable keys are replaced with the separator to produce
+        a valid Azure Key Vault secret name.
+        """
+        mock_client.get_secret.return_value = mock.Mock(value="cached-value")
+        backend = AzureKeyVaultBackend()
+        result = backend.get_variable("PythonVirtualenvOperator.cache-key")
+        mock_client.get_secret.assert_called_with(name="airflow-variables-PythonVirtualenvOperator-cache-key")
+        assert result == "cached-value"
